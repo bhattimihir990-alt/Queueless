@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Live Queue Tracking | QueueLess{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center p-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-broadcast me-2"></i> Live Queue Dashboard</h5>
+                <span class="badge bg-light text-primary small"><i class="bi bi-arrow-repeat spin me-1"></i> Auto-updating every 3s</span>
+            </div>
+            <div class="card-body p-4 text-center">
+
+                <div id="statusAlert" class="alert alert-warning d-none mb-4 fw-bold">
+                    <i class="bi bi-bell-fill me-2 fs-5"></i>
+                    <span id="alertMessage">IT'S YOUR TURN! Please proceed to your counter.</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small text-uppercase">Your Token</div>
+                            <div class="display-6 fw-bold text-primary my-1">{{ token.token_number }}</div>
+                            <div id="statusBadgeContainer">
+                                <span id="queueBadge" class="badge bg-warning text-dark text-uppercase fs-6">
+                                    {{ queue_status.queue_status if queue_status else token.status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small text-uppercase">Now Serving</div>
+                            <div id="currentServing" class="display-6 fw-bold text-success my-1">
+                                {{ queue_status.current_token if queue_status else 'None' }}
+                            </div>
+                            <div class="small text-muted">Active Counter</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small text-uppercase">People Ahead</div>
+                            <div id="peopleAhead" class="display-6 fw-bold text-dark my-1">
+                                {{ queue_status.people_ahead if queue_status else 0 }}
+                            </div>
+                            <div class="small text-muted">In Waiting Line</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small text-uppercase">Est. Wait Time</div>
+                            <div id="estWait" class="display-6 fw-bold text-info my-1">
+                                {{ queue_status.estimated_wait if queue_status else 0 }}<span class="fs-6">m</span>
+                            </div>
+                            <div class="small text-muted">Minutes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 text-start bg-light mb-4">
+                    <div class="row g-2">
+                        <div class="col-sm-4 text-muted">Service:</div>
+                        <div class="col-sm-8 fw-bold">{{ token.service_name }}</div>
+
+                        <div class="col-sm-4 text-muted">Office & Dept:</div>
+                        <div class="col-sm-8">{{ token.office_name }} — {{ token.department_name }}</div>
+
+                        <div class="col-sm-4 text-muted">Counter Number:</div>
+                        <div class="col-sm-8 fw-bold text-primary" id="assignedCounter">
+                            {{ queue_status.counter_number if queue_status else (token.counter_number or 'Unassigned') }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-center">
+                    {% if (queue_status and queue_status.queue_status == 'waiting') or token.status == 'waiting' %}
+                    <form method="POST" action="{{ url_for('citizen.cancel_token') }}" onsubmit="return confirm('Are you sure you want to cancel this token?');">
+                        <input type="hidden" name="token_id" value="{{ token.id }}">
+                        <button type="submit" class="btn btn-outline-danger" id="cancelBtn">
+                            <i class="bi bi-x-circle me-1"></i> Cancel Token
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{{ url_for('citizen.citizen_index') }}" class="btn btn-primary">
+                        <i class="bi bi-house me-1"></i> Back to Dashboard
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pb-5">
+        <i id="modalIcon" class="bi bi-bell text-warning" style="font-size: 4rem;"></i>
+        <h4 id="modalTitle" class="mt-3 fw-bold">Alert</h4>
+        <p id="modalBody" class="text-muted mt-2 mb-4"></p>
+        <button type="button" class="btn btn-primary px-4 fw-bold" data-bs-dismiss="modal">Got it</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tokenId = {{ token.id }};
+    const currentServingEl = document.getElementById('currentServing');
+    const peopleAheadEl = document.getElementById('peopleAhead');
+    const estWaitEl = document.getElementById('estWait');
+    const queueBadgeEl = document.getElementById('queueBadge');
+    const assignedCounterEl = document.getElementById('assignedCounter');
+    const statusAlertEl = document.getElementById('statusAlert');
+    const alertMessageEl = document.getElementById('alertMessage');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    let calledModalShown = false;
+    let nearModalShown = false;
+    
+    // Use bootstrap modal if available
+    const alertModalEl = document.getElementById('alertModal');
+    const alertModal = alertModalEl ? new bootstrap.Modal(alertModalEl) : null;
+    const modalIcon = document.getElementById('modalIcon');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    function updateBadge(status) {
+        queueBadgeEl.textContent = status.toUpperCase();
+        queueBadgeEl.className = 'badge text-uppercase fs-6 ';
+        if (status === 'waiting') {
+            queueBadgeEl.classList.add('bg-warning', 'text-dark');
+        } else if (status === 'called') {
+            queueBadgeEl.classList.add('bg-info', 'text-dark');
+        } else if (status === 'serving') {
+            queueBadgeEl.classList.add('bg-success');
+        } else if (status === 'completed') {
+            queueBadgeEl.classList.add('bg-secondary');
+        } else {
+            queueBadgeEl.classList.add('bg-danger');
+        }
+    }
+
+    function pollQueueStatus() {
+        fetch('/api/queue/' + tokenId)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) return;
+
+                if (currentServingEl) currentServingEl.textContent = data.current_token || 'None';
+                if (peopleAheadEl) peopleAheadEl.textContent = data.people_ahead;
+                if (estWaitEl) estWaitEl.innerHTML = data.estimated_wait + '<span class="fs-6">m</span>';
+                if (assignedCounterEl) assignedCounterEl.textContent = data.counter_number || 'Unassigned';
+
+                if (queueBadgeEl && data.queue_status) {
+                    updateBadge(data.queue_status);
+                }
+
+                // Banner Updates
+                if (data.queue_status === 'called' || data.queue_status === 'serving') {
+                    statusAlertEl.classList.remove('d-none', 'alert-warning', 'alert-secondary');
+                    statusAlertEl.classList.add('alert-success');
+                    alertMessageEl.innerHTML = `Attention! Your token is currently <strong>${data.queue_status.toUpperCase()}</strong>. Please proceed to <strong>${data.counter_number || 'your assigned counter'}</strong>.`;
+                    if (cancelBtn) cancelBtn.style.display = 'none';
+                    
+                    // Show Modal if not shown
+                    if (data.queue_status === 'called' && !calledModalShown && alertModal) {
+                        modalIcon.className = 'bi bi-broadcast text-success';
+                        modalTitle.textContent = "It's your turn!";
+                        modalBody.innerHTML = `Token <strong>${data.user_token}</strong> has been called. Please proceed to <strong>Counter ${data.counter_number || ''}</strong>.`;
+                        alertModal.show();
+                        calledModalShown = true;
+                    }
+                } else if (data.queue_status === 'waiting' && data.people_ahead === 2) {
+                    statusAlertEl.classList.remove('d-none', 'alert-success', 'alert-secondary');
+                    statusAlertEl.classList.add('alert-warning');
+                    alertMessageEl.innerHTML = `Your turn is near! There are only 2 people ahead of you.`;
+                    
+                    // Show Modal if not shown
+                    if (!nearModalShown && alertModal) {
+                        modalIcon.className = 'bi bi-bell-fill text-warning';
+                        modalTitle.textContent = "Your turn is near!";
+                        modalBody.innerHTML = `There are only 2 people ahead of you in the queue. Please get ready!`;
+                        alertModal.show();
+                        nearModalShown = true;
+                    }
+                } else if (data.queue_status === 'completed') {
+                    statusAlertEl.classList.remove('d-none', 'alert-success', 'alert-warning');
+                    statusAlertEl.classList.add('alert-secondary');
+                    alertMessageEl.textContent = 'Your service has been completed. Thank you!';
+                    if (cancelBtn) cancelBtn.style.display = 'none';
+                }
+            })
+            .catch(err => console.error('Live queue poll error:', err));
+    }
+
+    // Initial poll & set interval for every 3.5 seconds (3500 ms)
+    pollQueueStatus();
+    setInterval(pollQueueStatus, 3500);
+});
+</script>
+{% endblock %}

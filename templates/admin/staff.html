@@ -1,0 +1,239 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Staff{% endblock %}
+{% block page_heading %}Manage Staff{% endblock %}
+
+{% block content %}
+<div class="card table-card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Counter Staff</h5>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.add_staff_page') }}" class="btn btn-primary">
+                <i class="bi bi-person-plus-fill me-1"></i> Register New Staff
+            </a>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+                <i class="bi bi-plus-lg"></i> Quick Add
+            </button>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Contact</th>
+                    <th>Office / Department</th>
+                    <th>Counter</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in staff_list %}
+                <tr>
+                    <td><strong>{{ member.name }}</strong></td>
+                    <td>
+                        <span class="badge bg-light text-dark border">@{{ member.username or (member.email.split('@')[0]) }}</span>
+                    </td>
+                    <td>
+                        {{ member.email }}
+                        <div class="small text-muted">{{ member.mobile }}</div>
+                    </td>
+                    <td>
+                        {{ member.office_name }}
+                        <div class="small text-muted">{{ member.department_name }}</div>
+                    </td>
+                    <td>{{ member.counter_number or 'Unassigned' }}</td>
+                    <td>
+                        <span class="badge rounded-pill {% if member.status == 'active' %}badge-active{% else %}badge-inactive{% endif %}">
+                            {{ member.status }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editStaffModal"
+                                data-id="{{ member.id }}"
+                                data-name="{{ member.name }}"
+                                data-email="{{ member.email }}"
+                                data-mobile="{{ member.mobile }}"
+                                data-office="{{ member.office_id }}"
+                                data-dept="{{ member.department_id }}"
+                                data-counter="{{ member.counter_id or '' }}"
+                                data-status="{{ member.status }}">
+                            Edit
+                        </button>
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="action" value="toggle">
+                            <input type="hidden" name="staff_id" value="{{ member.id }}">
+                            <button class="btn btn-sm btn-outline-{{ 'warning' if member.status == 'active' else 'success' }}">
+                                {{ 'Deactivate' if member.status == 'active' else 'Activate' }}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No staff members yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addStaffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" class="modal-content">
+            <input type="hidden" name="action" value="add">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Staff Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Mobile</label>
+                        <input type="text" name="mobile" class="form-control" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" minlength="6" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Office</label>
+                    <select name="office_id" id="addStaffOffice" class="form-select js-office-filter" data-target="#addStaffDept" required>
+                        <option value="">Select office</option>
+                        {% for office in offices %}
+                        <option value="{{ office.id }}">{{ office.office_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Department</label>
+                    <select name="department_id" id="addStaffDept" class="form-select js-dept-filter" data-target="#addStaffCounter" required>
+                        <option value="">Select department</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" data-office="{{ dept.office_id }}">{{ dept.department_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Counter <span class="text-muted">(optional)</span></label>
+                    <select name="counter_id" id="addStaffCounter" class="form-select">
+                        <option value="">Unassigned</option>
+                        {% for counter in counters %}
+                        <option value="{{ counter.id }}" data-office="{{ counter.office_id }}" data-dept="{{ counter.department_id }}">
+                            {{ counter.counter_number }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Staff</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="editStaffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" class="modal-content">
+            <input type="hidden" name="action" value="update">
+            <input type="hidden" name="staff_id" id="editStaffId">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Staff Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="name" id="editStaffName" class="form-control" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="editStaffEmail" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Mobile</label>
+                        <input type="text" name="mobile" id="editStaffMobile" class="form-control" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">New Password <span class="text-muted">(leave blank to keep)</span></label>
+                    <input type="password" name="password" class="form-control" minlength="6">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Office</label>
+                    <select name="office_id" id="editStaffOffice" class="form-select js-office-filter" data-target="#editStaffDept" required>
+                        {% for office in offices %}
+                        <option value="{{ office.id }}">{{ office.office_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Department</label>
+                    <select name="department_id" id="editStaffDept" class="form-select js-dept-filter" data-target="#editStaffCounter" required>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" data-office="{{ dept.office_id }}">{{ dept.department_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Counter</label>
+                    <select name="counter_id" id="editStaffCounter" class="form-select">
+                        <option value="">Unassigned</option>
+                        {% for counter in counters %}
+                        <option value="{{ counter.id }}" data-office="{{ counter.office_id }}" data-dept="{{ counter.department_id }}">
+                            {{ counter.counter_number }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" id="editStaffStatus" class="form-select">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="on_break">On Break</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Update Staff</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script>
+document.getElementById('editStaffModal')?.addEventListener('show.bs.modal', function (event) {
+    const btn = event.relatedTarget;
+    document.getElementById('editStaffId').value = btn.dataset.id;
+    document.getElementById('editStaffName').value = btn.dataset.name;
+    document.getElementById('editStaffEmail').value = btn.dataset.email;
+    document.getElementById('editStaffMobile').value = btn.dataset.mobile;
+    document.getElementById('editStaffOffice').value = btn.dataset.office;
+    filterByOffice(document.getElementById('editStaffOffice'));
+    document.getElementById('editStaffDept').value = btn.dataset.dept;
+    filterByDept(document.getElementById('editStaffDept'));
+    document.getElementById('editStaffCounter').value = btn.dataset.counter;
+    document.getElementById('editStaffStatus').value = btn.dataset.status;
+});
+</script>
+{% endblock %}

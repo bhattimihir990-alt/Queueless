@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Login | QueueLess{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-1">Citizen Login</h2>
+                <p class="text-center text-muted mb-4">Access your queue tokens and appointments</p>
+
+                <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               value="{{ email or '' }}" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+
+                <hr class="my-4">
+                <p class="text-center mb-1">
+                    New citizen?
+                    <a href="{{ url_for('auth.register') }}">Create an account</a>
+                </p>
+                <p class="text-center mb-0 small text-muted">
+                    <a href="{{ url_for('auth.staff_login') }}">Staff Login</a>
+                    &middot;
+                    <a href="{{ url_for('auth.admin_login') }}">Admin Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

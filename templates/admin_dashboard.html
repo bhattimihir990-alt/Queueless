@@ -1,0 +1,461 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Dashboard | Analytics{% endblock %}
+{% block page_heading %}Dashboard & Analytics Overview{% endblock %}
+
+{% block content %}
+<!-- Main Dashboard Header Banner & Action Button -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 bg-white p-3 rounded-3 shadow-sm border">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3">
+            <i class="bi bi-speedometer2 fs-3"></i>
+        </div>
+        <div>
+            <h5 class="fw-bold mb-0 text-dark">Administrative Command Center</h5>
+            <small class="text-muted">Live queue surveillance, desk operations, and system administration</small>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ url_for('register_admin') }}" class="btn btn-success fw-bold px-3 py-2 shadow-sm">
+            <i class="bi bi-person-plus-fill me-1"></i> ➕ Add New Admin
+        </a>
+    </div>
+</div>
+
+<!-- Top KPI Stat Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary p-3 rounded-circle">
+                    <i class="bi bi-people-fill fs-3"></i>
+                </div>
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Active Citizens</div>
+                    <div class="h3 mb-0 fw-bold" id="statActiveCitizens">{{ stats.active_citizens }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-info bg-opacity-10 text-info p-3 rounded-circle">
+                    <i class="bi bi-ticket-perforated-fill fs-3"></i>
+                </div>
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Today's Tokens</div>
+                    <div class="h3 mb-0 fw-bold" id="statTodayTokens">{{ stats.today_tokens }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning p-3 rounded-circle">
+                    <i class="bi bi-hourglass-split fs-3"></i>
+                </div>
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Waiting in Queue</div>
+                    <div class="h3 mb-0 fw-bold text-warning" id="statWaitingTokens">{{ stats.waiting_tokens }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success bg-opacity-10 text-success p-3 rounded-circle">
+                    <i class="bi bi-check-circle-fill fs-3"></i>
+                </div>
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Completed Today</div>
+                    <div class="h3 mb-0 fw-bold text-success" id="statCompletedTokens">{{ stats.completed_tokens }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Metrics -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card border-0 shadow-sm text-center p-3">
+            <div class="card-body py-2">
+                <div class="text-muted small text-uppercase fw-semibold">Total Offices</div>
+                <div class="display-6 fw-bold text-primary" id="statTotalOffices">{{ stats.total_offices }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-0 shadow-sm text-center p-3">
+            <div class="card-body py-2">
+                <div class="text-muted small text-uppercase fw-semibold">Active Staff</div>
+                <div class="display-6 fw-bold text-success" id="statTotalStaff">{{ stats.total_staff }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-0 shadow-sm text-center p-3">
+            <div class="card-body py-2">
+                <div class="text-muted small text-uppercase fw-semibold">Total Citizens</div>
+                <div class="display-6 fw-bold text-secondary" id="statTotalCitizens">{{ stats.total_citizens }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Visualizations Section -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h5 class="fw-bold mb-0">
+        <i class="bi bi-graph-up-arrow text-primary me-2"></i> Real-time Queue & Operational Analytics
+    </h5>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1 small">
+            <i class="bi bi-broadcast me-1"></i> Live Monitor (Auto-refresh 6s)
+        </span>
+        <a href="{{ url_for('admin.reports') }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-file-earmark-text me-1"></i> Full Detailed Reports
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- 1. Tokens Per Day (Line/Bar Chart) -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-calendar3 text-primary me-2"></i> Tokens Generated (Last 7 Days)
+                </h6>
+                <span class="badge bg-primary-subtle text-primary small">Daily Trend</span>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 280px;">
+                    <canvas id="tokensPerDayChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Service-wise Usage (Doughnut Chart) -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-pie-chart text-success me-2"></i> Service-wise Usage Distribution
+                </h6>
+                <span class="badge bg-success-subtle text-success small">Top Services</span>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 280px;">
+                    <canvas id="serviceUsageChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Department Queue Distribution (Bar Chart) -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-bar-chart-line text-warning me-2"></i> Department Waiting Queue (Today)
+                </h6>
+                <span class="badge bg-warning-subtle text-dark small">Active Queues</span>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 280px;">
+                    <canvas id="departmentQueueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Completed vs Cancelled / Skipped Tokens (Pie/Doughnut Chart) -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-ui-checks-grid text-info me-2"></i> Token Status Breakdown
+                </h6>
+                <span class="badge bg-info-subtle text-info small">Lifecycle Status</span>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 280px;">
+                    <canvas id="statusBreakdownChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions & Office Overviews -->
+<div class="card table-card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-lightning-charge text-warning me-2"></i> Quick Administrative Actions</h6>
+        <a href="{{ url_for('register_admin') }}" class="btn btn-sm btn-success fw-bold">
+            <i class="bi bi-shield-plus me-1"></i> ➕ Add New Admin
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <a href="{{ url_for('register_admin') }}" class="btn btn-success fw-bold w-100 shadow-sm">
+                    <i class="bi bi-shield-plus me-1"></i> ➕ Add New Admin
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('admin.add_staff_page') }}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-person-plus me-1"></i> Register Staff
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('admin.offices') }}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-building me-1"></i> Manage Offices
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-file-earmark-bar-graph me-1"></i> View Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if offices %}
+<div class="card table-card border-0 shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-building-check text-primary me-2"></i> Active Government Offices</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Office Name</th>
+                    <th>City</th>
+                    <th>Operating Hours</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for office in offices[:5] %}
+                <tr>
+                    <td class="fw-semibold">{{ office.office_name }}</td>
+                    <td>{{ office.city }}</td>
+                    <td>{{ office.opening_time|hhmm }} – {{ office.closing_time|hhmm }}</td>
+                    <td>
+                        <span class="badge rounded-pill {% if office.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ office.status|capitalize }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js Library via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Chart Data passed from Flask backend or API fallback
+    const chartData = {{ chart_data_json|safe if chart_data_json else '{}' }};
+
+    const colorPalette = [
+        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+        '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'
+    ];
+
+    // 1. Tokens Per Day Chart (Line / Bar)
+    const tpd = chartData.tokens_per_day || { labels: [], data: [] };
+    const ctx1 = document.getElementById('tokensPerDayChart').getContext('2d');
+    const chart1 = new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: tpd.labels,
+            datasets: [{
+                label: 'Tokens Issued',
+                data: tpd.data,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#2563eb',
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { padding: 10, cornerRadius: 6 }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // 2. Service-wise Usage (Doughnut Chart)
+    const srv = chartData.service_usage || { labels: [], data: [] };
+    const ctx2 = document.getElementById('serviceUsageChart').getContext('2d');
+    const chart2 = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: srv.labels,
+            datasets: [{
+                data: srv.data,
+                backgroundColor: colorPalette,
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                },
+                tooltip: { padding: 10, cornerRadius: 6 }
+            },
+            cutout: '65%'
+        }
+    });
+
+    // 3. Department Queue Distribution (Bar Chart)
+    const dept = chartData.department_queue || { labels: [], data: [] };
+    const ctx3 = document.getElementById('departmentQueueChart').getContext('2d');
+    const chart3 = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: dept.labels,
+            datasets: [{
+                label: 'Waiting Citizens',
+                data: dept.data,
+                backgroundColor: '#f59e0b',
+                borderRadius: 4,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { padding: 10, cornerRadius: 6 }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // 4. Status Breakdown Chart (Pie Chart)
+    const st = chartData.status_breakdown || { labels: [], data: [] };
+    const ctx4 = document.getElementById('statusBreakdownChart').getContext('2d');
+    const chart4 = new Chart(ctx4, {
+        type: 'pie',
+        data: {
+            labels: st.labels,
+            datasets: [{
+                data: st.data,
+                backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#fd7e14', '#ef4444'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                },
+                tooltip: { padding: 10, cornerRadius: 6 }
+            }
+        }
+    });
+
+    // Background Auto-Refresh Polling Function (Every 6 seconds)
+    function pollAdminLiveMetrics() {
+        fetch('/api/admin/live-metrics')
+            .then(res => res.json())
+            .then(res => {
+                if (res.status !== 'success') return;
+
+                // Update KPI Cards
+                if (res.stats) {
+                    const sAC = document.getElementById('statActiveCitizens');
+                    const sTT = document.getElementById('statTodayTokens');
+                    const sWT = document.getElementById('statWaitingTokens');
+                    const sCT = document.getElementById('statCompletedTokens');
+                    const sTO = document.getElementById('statTotalOffices');
+                    const sTS = document.getElementById('statTotalStaff');
+                    const sTC = document.getElementById('statTotalCitizens');
+
+                    if (sAC && res.stats.active_citizens !== undefined) sAC.textContent = res.stats.active_citizens;
+                    if (sTT && res.stats.today_tokens !== undefined) sTT.textContent = res.stats.today_tokens;
+                    if (sWT && res.stats.waiting_tokens !== undefined) sWT.textContent = res.stats.waiting_tokens;
+                    if (sCT && res.stats.completed_tokens !== undefined) sCT.textContent = res.stats.completed_tokens;
+                    if (sTO && res.stats.total_offices !== undefined) sTO.textContent = res.stats.total_offices;
+                    if (sTS && res.stats.total_staff !== undefined) sTS.textContent = res.stats.total_staff;
+                    if (sTC && res.stats.total_citizens !== undefined) sTC.textContent = res.stats.total_citizens;
+                }
+
+                // Update Charts datasets smoothly without flicker
+                if (res.charts) {
+                    if (chart1 && res.charts.tokens_per_day) {
+                        chart1.data.labels = res.charts.tokens_per_day.labels;
+                        chart1.data.datasets[0].data = res.charts.tokens_per_day.data;
+                        chart1.update('none');
+                    }
+                    if (chart2 && res.charts.service_usage) {
+                        chart2.data.labels = res.charts.service_usage.labels;
+                        chart2.data.datasets[0].data = res.charts.service_usage.data;
+                        chart2.update('none');
+                    }
+                    if (chart3 && res.charts.department_queue) {
+                        chart3.data.labels = res.charts.department_queue.labels;
+                        chart3.data.datasets[0].data = res.charts.department_queue.data;
+                        chart3.update('none');
+                    }
+                    if (chart4 && res.charts.status_breakdown) {
+                        chart4.data.labels = res.charts.status_breakdown.labels;
+                        chart4.data.datasets[0].data = res.charts.status_breakdown.data;
+                        chart4.update('none');
+                    }
+                }
+            })
+            .catch(err => console.error('Admin metrics polling error:', err));
+    }
+
+    // Auto-refresh interval: 6 seconds (6000ms)
+    setInterval(pollAdminLiveMetrics, 6000);
+});
+</script>
+{% endblock %}

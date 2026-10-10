@@ -1,0 +1,308 @@
+/* ==========================================================================
+   QueueLess Government Digital Service Theme
+   Deep Navy Blue & Royal Blue Modern Design System
+   ========================================================================== */
+
+:root {
+    --primary-navy: #1e3a8a;
+    --primary-royal: #2563eb;
+    --primary-light: #3b82f6;
+    --primary-surface: #eff6ff;
+    
+    --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+
+    /* Status Color Palette */
+    --status-waiting: #f59e0b;
+    --status-called: #6366f1;
+    --status-serving: #3b82f6;
+    --status-completed: #10b981;
+    --status-skipped: #ef4444;
+    --status-cancelled: #ef4444;
+
+    /* Elevation Shadows */
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* Base Document Setup */
+html, body {
+    height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-primary);
+    background-color: var(--bg-main);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+/* Header & Navbar Styling */
+.navbar-gov {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+    box-shadow: var(--shadow-md);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.navbar-gov .navbar-brand {
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-gov .nav-link {
+    color: #e2e8f0 !important;
+    font-weight: 500;
+    padding: 0.5rem 0.85rem !important;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.navbar-gov .nav-link:hover,
+.navbar-gov .nav-link:focus {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.navbar-gov .nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+}
+
+/* Card Enhancements */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.85rem;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+    border-bottom: 1px solid var(--border-color);
+    border-top-left-radius: 0.85rem !important;
+    border-top-right-radius: 0.85rem !important;
+}
+
+/* Custom Token Card with Big Typography */
+.token-card {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-md);
+    padding: 1.75rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.token-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--primary-navy), var(--primary-royal));
+}
+
+.token-number-hero {
+    font-family: 'Poppins', 'Inter', monospace, sans-serif;
+    font-size: 3.75rem;
+    font-weight: 900;
+    color: var(--primary-navy);
+    letter-spacing: -0.05em;
+    line-height: 1;
+    margin: 0.75rem 0;
+    text-shadow: 0 2px 4px rgba(30, 58, 138, 0.08);
+}
+
+.token-meta {
+    font-size: 0.925rem;
+    color: var(--text-muted);
+}
+
+/* Status Badges */
+.badge-status {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.45rem 0.85rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.badge-waiting {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fde68a;
+}
+
+.badge-called {
+    background-color: #e0e7ff !important;
+    color: #4338ca !important;
+    border: 1px solid #c7d2fe;
+}
+
+.badge-serving {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-completed {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-skipped,
+.badge-cancelled {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fecaca;
+}
+
+/* Accessible Interactive Buttons */
+.btn {
+    border-radius: 0.5rem;
+    font-weight: 600;
+    padding: 0.55rem 1.15rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background-color: var(--primary-royal);
+    border-color: var(--primary-royal);
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.btn-navy {
+    background-color: var(--primary-navy);
+    border-color: var(--primary-navy);
+    color: #ffffff;
+}
+
+.btn-navy:hover {
+    background-color: #172554;
+    border-color: #172554;
+    color: #ffffff;
+}
+
+/* Alert Styling with Animation */
+.alert {
+    border-radius: 0.75rem;
+    border: none;
+    box-shadow: var(--shadow-subtle);
+    font-weight: 500;
+}
+
+/* Modern Tables */
+.table {
+    --bs-table-hover-bg: #f8fafc;
+    margin-bottom: 0;
+}
+
+.table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: var(--text-muted);
+    border-bottom-width: 1px;
+}
+
+/* Pulse Animation for Active Calls */
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 14px rgba(99, 102, 241, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
+}
+
+.pulse-active {
+    animation: pulseGlow 2s infinite;
+}
+
+/* Footer Styling */
+.footer-gov {
+    background-color: #ffffff;
+    border-top: 1px solid var(--border-color);
+    padding: 1.75rem 0;
+    margin-top: auto;
+    font-size: 0.9rem;
+}
+
+.footer-tagline {
+    font-weight: 600;
+    color: var(--primary-navy);
+}
+
+/* Responsive Utilities */
+@media (max-width: 767.98px) {
+    .token-number-hero {
+        font-size: 2.75rem;
+    }
+    .token-card {
+        padding: 1.25rem;
+    }
+    .navbar-gov .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ office.office_name }} | QueueLess{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('citizen.offices') }}">Offices</a></li>
+        <li class="breadcrumb-item active">{{ office.office_name }}</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <h3 class="fw-bold mb-1">{{ office.office_name }}</h3>
+                <p class="text-muted mb-2"><i class="bi bi-geo-alt me-1"></i> {{ office.address }}, {{ office.city }}</p>
+                <div class="d-flex gap-3 text-muted small">
+                    <span><i class="bi bi-telephone me-1"></i> {{ office.phone or 'N/A' }}</span>
+                    <span><i class="bi bi-clock me-1"></i> Hours: {{ office.opening_time|hhmm }} – {{ office.closing_time|hhmm }}</span>
+                </div>
+            </div>
+            <a href="{{ url_for('citizen.generate_token', office_id=office.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Get Token for this Office
+            </a>
+        </div>
+    </div>
+</div>
+
+<h4 class="fw-bold mb-3">Departments & Services</h4>
+
+<div class="row g-4">
+    {% for dept in office.departments %}
+    <div class="col-lg-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-diagram-3 me-2 text-primary"></i> {{ dept.department_name }}</span>
+            </div>
+            <div class="card-body">
+                {% if dept.description %}
+                <p class="text-muted small mb-3">{{ dept.description }}</p>
+                {% endif %}
+                <div class="list-group list-group-flush border-top">
+                    {% for srv in dept.services %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                        <div>
+                            <div class="fw-semibold text-dark">{{ srv.service_name }}</div>
+                            <div class="small text-muted">Avg Wait: {{ srv.average_time }} mins &bull; Daily Limit: {{ srv.daily_limit }}</div>
+                        </div>
+                        <a href="{{ url_for('citizen.generate_token', office_id=office.id, department_id=dept.id, service_id=srv.id) }}" class="btn btn-outline-primary btn-sm">
+                            Get Token
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-muted small py-2">No active services registered for this department.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">No active departments found for this office.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

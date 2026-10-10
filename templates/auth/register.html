@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Registration | QueueLess{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-1">Citizen Registration</h2>
+                <p class="text-center text-muted mb-4">Create your QueueLess account</p>
+
+                <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name"
+                               value="{{ name or '' }}" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mobile" class="form-label">Mobile Number</label>
+                        <input type="tel" class="form-control" id="mobile" name="mobile"
+                               value="{{ mobile or '' }}" pattern="\d{10}" maxlength="10" required
+                               placeholder="10-digit mobile number">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               value="{{ email or '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address <span class="text-muted">(optional)</span></label>
+                        <textarea class="form-control" id="address" name="address" rows="2">{{ address or '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               minlength="6" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password"
+                               name="confirm_password" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                </form>
+
+                <p class="text-center mt-4 mb-0">
+                    Already registered?
+                    <a href="{{ url_for('auth.login') }}">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

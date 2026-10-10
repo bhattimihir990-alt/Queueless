@@ -1,0 +1,160 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Register Admin | QueueLess{% endblock %}
+{% block page_heading %}Administrator Account Management{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Registration Form -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-0">
+                <h5 class="card-title mb-0 fw-bold text-primary">
+                    <i class="bi bi-shield-plus me-2"></i> Register New Administrator
+                </h5>
+                <small class="text-muted">Create administrative credentials with full portal access.</small>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('admin.register_admin') }}" autocomplete="off" novalidate>
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ name|default('') }}" placeholder="e.g. Dr. Rajesh Sharma" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-at"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ username|default('') }}" placeholder="e.g. admin_rajesh" 
+                                   pattern="^[a-zA-Z0-9_.-]{3,30}$" required>
+                        </div>
+                        <div class="form-text small">3–30 characters, letters, numbers, underscores or hyphens.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-semibold">Official Email Address <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ email|default('') }}" placeholder="e.g. rajesh.admin@queueless.gov" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-key"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Minimum 8 characters" required>
+                            <button class="btn btn-outline-secondary" type="button" id="togglePwdBtn" onclick="togglePassword('password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text small">Must contain uppercase, lowercase, number, and min 8 characters.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="confirm_password" class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-check2-circle"></i></span>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                   placeholder="Re-enter password" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                            <i class="bi bi-shield-check me-2"></i> Create Administrator Account
+                        </button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-light text-muted">
+                            Cancel & Return to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Administrators Table -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="bi bi-people-fill text-primary me-2"></i> Active Administrators
+                    </h5>
+                    <small class="text-muted">Total registered administrators: {{ admins|length }}</small>
+                </div>
+                <span class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2">Role: SuperAdmin / Admin</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Administrator Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Registered</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for adm in admins %}
+                            <tr>
+                                <td class="text-muted">{{ adm.id }}</td>
+                                <td class="fw-semibold">
+                                    <i class="bi bi-person-badge-fill text-primary me-1"></i>
+                                    {{ adm.name }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">@{{ adm.username or 'admin' }}</span>
+                                </td>
+                                <td class="small">{{ adm.email }}</td>
+                                <td>
+                                    <span class="badge rounded-pill {% if adm.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ adm.status|capitalize }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small">
+                                    {{ adm.created_at.strftime('%Y-%m-%d') if adm.created_at else '—' }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No administrators found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-light py-3 border-0 small text-muted">
+                <i class="bi bi-info-circle me-1"></i> Passwords are salted and securely hashed using Werkzeug / BCrypt before database storage.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+</script>
+{% endblock %}

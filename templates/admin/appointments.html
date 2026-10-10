@@ -1,0 +1,65 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Appointments Overview | Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-calendar-check text-primary me-2"></i>Appointments</h3>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Citizen</th>
+                        <th>Mobile</th>
+                        <th>Office & Dept</th>
+                        <th>Service</th>
+                        <th>Date & Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in appointments %}
+                    <tr>
+                        <td><span class="text-muted">#{{ appt.id }}</span></td>
+                        <td class="fw-bold">{{ appt.citizen_name }}</td>
+                        <td>{{ appt.mobile }}</td>
+                        <td>
+                            <div class="small fw-bold">{{ appt.office_name }}</div>
+                            <div class="small text-muted">{{ appt.department_name }}</div>
+                        </td>
+                        <td>{{ appt.service_name }}</td>
+                        <td>
+                            <div class="small fw-bold">{{ appt.appointment_date }}</div>
+                            <div class="small text-muted">{{ appt.appointment_time }}</div>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if appt.status == 'scheduled' %}bg-primary
+                                {% elif appt.status == 'confirmed' %}bg-success
+                                {% elif appt.status == 'completed' %}bg-secondary
+                                {% elif appt.status == 'cancelled' %}bg-danger
+                                {% else %}bg-warning text-dark{% endif %}">
+                                {% if appt.status == 'scheduled' %}BOOKED
+                                {% else %}{{ appt.status | upper }}{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-info-circle mb-2 d-block fs-4"></i>
+                            No appointments found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

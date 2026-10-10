@@ -1,0 +1,286 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Counter Dashboard | QueueLess Staff{% endblock %}
+
+{% block content %}
+<!-- Top Info Bar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3 bg-white rounded">
+        <div class="row align-items-center text-center text-md-start">
+            <div class="col-md-3 mb-2 mb-md-0 border-end-md">
+                <span class="text-muted small">Assigned Office:</span>
+                <div class="fw-bold text-dark">{{ staff_info.office_name }}</div>
+            </div>
+            <div class="col-md-3 mb-2 mb-md-0 border-end-md">
+                <span class="text-muted small">Department:</span>
+                <div class="fw-bold text-dark">{{ staff_info.department_name }}</div>
+            </div>
+            <div class="col-md-3 mb-2 mb-md-0 border-end-md">
+                <span class="text-muted small">Counter Number:</span>
+                <div class="fw-bold text-primary fs-5">{{ staff_info.counter_number or 'Unassigned' }}</div>
+            </div>
+            <div class="col-md-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small">Operator:</span>
+                    <div class="fw-bold text-dark">{{ staff_info.name }}</div>
+                </div>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-2 small" title="Auto-refreshing queue every 3 seconds">
+                    <i class="bi bi-broadcast me-1"></i> Live (3s)
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Current Token Card -->
+    <div class="col-lg-7">
+        <div class="card border-primary border-2 shadow-sm h-100">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-person-fill-check me-2"></i> Current Counter Token</h5>
+                <span id="currentTokenBadge" class="badge bg-light {% if current_token %}text-primary{% else %}text-dark{% endif %} text-uppercase fs-6">
+                    {{ current_token.status if current_token else 'IDLE' }}
+                </span>
+            </div>
+            <div class="card-body p-4" id="currentTokenCardBody">
+                {% if current_token %}
+                    <div class="row align-items-center">
+                        <div class="col-md-6 text-center border-end-md py-2">
+                            <div class="text-muted small text-uppercase fw-bold">Active Token</div>
+                            <div class="token-display-large text-primary my-1" id="curTokenNumber">{{ current_token.token_number }}</div>
+                            <div class="small text-muted" id="curTokenDate">Issued Today: {{ current_token.token_date }}</div>
+                        </div>
+                        <div class="col-md-6 ps-md-4 py-2">
+                            <h4 class="fw-bold text-dark mb-2" id="curUserName">{{ current_token.user_name }}</h4>
+                            <div class="mb-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary fs-6" id="curServiceName">{{ current_token.service_name }}</span>
+                            </div>
+                            <div class="text-muted small mb-1">
+                                <i class="bi bi-building me-1"></i> <span id="curOfficeName">{{ current_token.office_name }}</span>
+                            </div>
+                            <div class="text-muted small mb-3">
+                                <i class="bi bi-clock me-1"></i> Called: <span id="curCalledAt">{{ current_token.called_at or 'Just now' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Controls for Active Token -->
+                    <div class="border-top pt-3 mt-3" id="currentTokenActions">
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            {% if current_token.status == 'called' %}
+                            <form method="POST" action="{{ url_for('staff.serve_token') }}">
+                                <input type="hidden" name="token_id" value="{{ current_token.id }}">
+                                <button type="submit" class="btn btn-success btn-lg px-4 fw-bold">
+                                    <i class="bi bi-play-fill me-1"></i> START SERVING
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('staff.recall_token') }}">
+                                <input type="hidden" name="token_id" value="{{ current_token.id }}">
+                                <button type="submit" class="btn btn-info btn-lg px-3 fw-bold text-white">
+                                    <i class="bi bi-bell-fill me-1"></i> RECALL
+                                </button>
+                            </form>
+                            {% elif current_token.status == 'serving' %}
+                            <form method="POST" action="{{ url_for('staff.complete_token') }}">
+                                <input type="hidden" name="token_id" value="{{ current_token.id }}">
+                                <button type="submit" class="btn btn-success btn-lg px-4 fw-bold">
+                                    <i class="bi bi-check-circle-fill me-1"></i> COMPLETE
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            <form method="POST" action="{{ url_for('staff.skip_token') }}" onsubmit="return confirm('Mark this token as No-Show / Skip?');">
+                                <input type="hidden" name="token_id" value="{{ current_token.id }}">
+                                <button type="submit" class="btn btn-warning btn-lg px-3 fw-bold text-dark">
+                                    <i class="bi bi-skip-forward-fill me-1"></i> SKIP (NO-SHOW)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-cup-hot text-muted display-4"></i>
+                        <h4 class="mt-3 fw-bold text-secondary">No Token Currently Active</h4>
+                        <p class="text-muted">Click <strong>[ NEXT TOKEN ]</strong> below to call the next citizen in line.</p>
+
+                        <form method="POST" action="{{ url_for('staff.call_next') }}" class="mt-4">
+                            <button type="submit" id="callNextBtnMain" class="btn btn-primary btn-lg px-5 py-3 fw-bold fs-4 shadow" {% if not next_token %}disabled{% endif %}>
+                                <i class="bi bi-megaphone-fill me-2"></i> NEXT TOKEN
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Token & Queue Stats Card -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+                <span><i class="bi bi-person-lines-fill me-2 text-primary"></i> Next Token Preview</span>
+                <span class="badge bg-warning text-dark" id="waitingQueueBadge">{{ waiting_queue|length }} Waiting</span>
+            </div>
+            <div class="card-body p-4 text-center" id="nextTokenCardBody">
+                {% if next_token %}
+                    <div class="text-muted small text-uppercase fw-bold">Up Next</div>
+                    <div class="token-display-next text-warning my-1" id="nextTokNumber">{{ next_token.token_number }}</div>
+                    <h5 class="fw-bold text-dark mb-1" id="nextTokUserName">{{ next_token.user_name }}</h5>
+                    <span class="badge bg-light text-dark border mb-3" id="nextTokServiceName">{{ next_token.service_name }}</span>
+
+                    <form method="POST" action="{{ url_for('staff.call_next') }}">
+                        <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold">
+                            <i class="bi bi-megaphone-fill me-2"></i> CALL NEXT TOKEN NOW
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="py-3">
+                        <i class="bi bi-check-all text-success display-4"></i>
+                        <h5 class="fw-bold text-dark mt-2">Queue is Empty</h5>
+                        <p class="text-muted small">There are no citizens currently waiting in line for {{ staff_info.department_name }}.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm bg-dark text-white">
+            <div class="card-body p-4">
+                <h6 class="fw-bold text-uppercase text-muted mb-2">Counter Operator Quick Guide</h6>
+                <ul class="ps-3 mb-0 small">
+                    <li class="mb-1">Click <strong>NEXT TOKEN</strong> to call the first citizen in line.</li>
+                    <li class="mb-1">Click <strong>START SERVING</strong> when the citizen arrives at your counter.</li>
+                    <li class="mb-1">Click <strong>COMPLETE</strong> once the service transaction is finished.</li>
+                    <li class="mb-1">Click <strong>SKIP</strong> if citizen fails to show up.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Queue List Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+        <span><i class="bi bi-list-check me-2 text-primary"></i> Today's Waiting Citizens (<span id="tableWaitingCount">{{ waiting_queue|length }}</span>)</span>
+        <a href="{{ url_for('staff.queue') }}" class="btn btn-outline-secondary btn-sm">View Full Roster &rarr;</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Position</th>
+                    <th>Token #</th>
+                    <th>Citizen Name</th>
+                    <th>Service Required</th>
+                    <th>Date / Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="waitingQueueTableBody">
+                {% for item in waiting_queue %}
+                <tr>
+                    <td class="fw-bold text-muted">#{{ loop.index }}</td>
+                    <td class="fw-bold text-primary fs-5">{{ item.token_number }}</td>
+                    <td class="fw-semibold">{{ item.user_name }}</td>
+                    <td>{{ item.service_name }}</td>
+                    <td class="small text-muted">{{ item.token_date }}</td>
+                    <td><span class="badge bg-warning text-dark text-uppercase">Waiting</span></td>
+                </tr>
+                {% else %}
+                <tr id="emptyQueueRow">
+                    <td colspan="6" class="text-center text-muted py-4">No waiting tokens in line today.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    let lastWaitingCount = {{ waiting_queue|length }};
+    let currentTokenId = {{ current_token.id if current_token else 0 }};
+
+    function pollStaffLiveQueue() {
+        fetch('/api/staff/live-queue')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== 'success') return;
+
+                // 1. Update Waiting Badges
+                const waitingBadge = document.getElementById('waitingQueueBadge');
+                const tableCount = document.getElementById('tableWaitingCount');
+                if (waitingBadge) waitingBadge.textContent = `${data.waiting_count} Waiting`;
+                if (tableCount) tableCount.textContent = data.waiting_count;
+
+                // 2. Update Next Token Card Body
+                const nextCardBody = document.getElementById('nextTokenCardBody');
+                if (nextCardBody) {
+                    if (data.next_token) {
+                        nextCardBody.innerHTML = `
+                            <div class="text-muted small text-uppercase fw-bold">Up Next</div>
+                            <div class="token-display-next text-warning my-1">${data.next_token.token_number}</div>
+                            <h5 class="fw-bold text-dark mb-1">${data.next_token.user_name}</h5>
+                            <span class="badge bg-light text-dark border mb-3">${data.next_token.service_name}</span>
+                            <form method="POST" action="/staff/token/next">
+                                <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold">
+                                    <i class="bi bi-megaphone-fill me-2"></i> CALL NEXT TOKEN NOW
+                                </button>
+                            </form>
+                        `;
+                    } else {
+                        nextCardBody.innerHTML = `
+                            <div class="py-3">
+                                <i class="bi bi-check-all text-success display-4"></i>
+                                <h5 class="fw-bold text-dark mt-2">Queue is Empty</h5>
+                                <p class="text-muted small">There are no citizens currently waiting in line for ${data.staff_info.department_name}.</p>
+                            </div>
+                        `;
+                    }
+                }
+
+                // Enable/disable the main idle Call Next button if idle
+                const mainCallNextBtn = document.getElementById('callNextBtnMain');
+                if (mainCallNextBtn) {
+                    mainCallNextBtn.disabled = !data.next_token;
+                }
+
+                // 3. Update Waiting Table Rows if queue length or tokens changed
+                const tbody = document.getElementById('waitingQueueTableBody');
+                if (tbody) {
+                    if (!data.waiting_queue || data.waiting_queue.length === 0) {
+                        tbody.innerHTML = `
+                            <tr id="emptyQueueRow">
+                                <td colspan="6" class="text-center text-muted py-4">No waiting tokens in line today.</td>
+                            </tr>
+                        `;
+                    } else {
+                        let rowsHtml = '';
+                        data.waiting_queue.forEach((item, index) => {
+                            rowsHtml += `
+                                <tr>
+                                    <td class="fw-bold text-muted">#${index + 1}</td>
+                                    <td class="fw-bold text-primary fs-5">${item.token_number}</td>
+                                    <td class="fw-semibold">${item.user_name}</td>
+                                    <td>${item.service_name}</td>
+                                    <td class="small text-muted">${item.token_date}</td>
+                                    <td><span class="badge bg-warning text-dark text-uppercase">Waiting</span></td>
+                                </tr>
+                            `;
+                        });
+                        tbody.innerHTML = rowsHtml;
+                    }
+                }
+
+                lastWaitingCount = data.waiting_count;
+            })
+            .catch(err => console.error('Staff queue polling error:', err));
+    }
+
+    // Auto-refresh interval: 3 seconds (3000ms)
+    setInterval(pollStaffLiveQueue, 3000);
+});
+</script>
+{% endblock %}
+

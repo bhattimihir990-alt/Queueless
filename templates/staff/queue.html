@@ -1,0 +1,97 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Today's Full Queue | QueueLess Staff{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h3 class="h4 mb-1 fw-bold">Today's Department Queue</h3>
+        <p class="text-muted mb-0">Overview of waiting line and processed tokens for {{ staff_info.department_name }}</p>
+    </div>
+    <a href="{{ url_for('staff.staff_index') }}" class="btn btn-primary">
+        <i class="bi bi-speedometer2 me-1"></i> Back to Counter Operations
+    </a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+                <span><i class="bi bi-hourglass-split me-2 text-warning"></i> Waiting Queue ({{ waiting_queue|length }})</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Token #</th>
+                            <th>Citizen</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in waiting_queue %}
+                        <tr>
+                            <td class="fw-bold text-muted">{{ loop.index }}</td>
+                            <td class="fw-bold text-primary">{{ item.token_number }}</td>
+                            <td>{{ item.user_name }}</td>
+                            <td class="small">{{ item.service_name }}</td>
+                            <td><span class="badge bg-warning text-dark">Waiting</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No waiting tokens right now.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+                <span><i class="bi bi-check-circle me-2 text-success"></i> Counter History (Processed Today)</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Token #</th>
+                            <th>Citizen</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in history %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ item.token_number }}</td>
+                            <td>{{ item.user_name }}</td>
+                            <td class="small">{{ item.service_name }}</td>
+                            <td>
+                                {% if item.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif item.status in ('called', 'serving') %}
+                                    <span class="badge bg-info text-dark">{{ item.status|capitalize }}</span>
+                                {% elif item.status in ('cancelled', 'no_show') %}
+                                    <span class="badge bg-secondary">Skipped</span>
+                                {% else %}
+                                    <span class="badge bg-dark">{{ item.status|capitalize }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No tokens processed by this counter today yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Book Appointment | QueueLess{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white p-3">
+                <h4 class="card-title mb-0 fw-bold"><i class="bi bi-calendar-plus me-2"></i> Book Appointment</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('citizen.book_appointment') }}" id="appointmentForm">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">1. Select Government Office</label>
+                        <select name="office_id" id="officeSelect" class="form-select form-select-lg" required>
+                            <option value="">-- Choose Office --</option>
+                            {% for off in offices %}
+                            <option value="{{ off.id }}">
+                                {{ off.office_name }} ({{ off.city }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">2. Select Department</label>
+                        <select name="department_id" id="deptSelect" class="form-select form-select-lg" required disabled>
+                            <option value="">-- Choose Department --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" data-office="{{ dept.office_id }}">
+                                {{ dept.department_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">3. Select Service</label>
+                        <select name="service_id" id="serviceSelect" class="form-select form-select-lg" required disabled>
+                            <option value="">-- Choose Service --</option>
+                            {% for srv in services %}
+                            <option value="{{ srv.id }}" data-dept="{{ srv.department_id }}" data-office="{{ srv.office_id }}">
+                                {{ srv.service_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">4. Select Date</label>
+                        <input type="date" name="appointment_date" id="dateSelect" class="form-control form-control-lg" required min="{{ today }}" disabled>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">5. Select Time Slot</label>
+                        <select name="appointment_time" id="timeSelect" class="form-select form-select-lg" required disabled>
+                            <option value="">-- Choose Time Slot --</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold" id="submitBtn" disabled>
+                            <i class="bi bi-check-circle me-1"></i> Confirm Appointment
+                        </button>
+                        <a href="{{ url_for('citizen.my_appointments') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const officeSelect = document.getElementById('officeSelect');
+    const deptSelect = document.getElementById('deptSelect');
+    const serviceSelect = document.getElementById('serviceSelect');
+    const dateSelect = document.getElementById('dateSelect');
+    const timeSelect = document.getElementById('timeSelect');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Set min date to today
+    const today = new Date().toISOString().split('T')[0];
+    dateSelect.min = today;
+
+    function filterDepts() {
+        const selectedOffice = officeSelect.value;
+        if (selectedOffice) {
+            deptSelect.disabled = false;
+        } else {
+            deptSelect.disabled = true;
+            deptSelect.value = '';
+        }
+
+        Array.from(deptSelect.options).forEach(opt => {
+            if (!opt.value) return;
+            const match = !selectedOffice || opt.dataset.office === selectedOffice;
+            opt.hidden = !match;
+            if (!match && opt.selected) deptSelect.value = '';
+        });
+        filterServices();
+    }
+
+    function filterServices() {
+        const selectedDept = deptSelect.value;
+        const selectedOffice = officeSelect.value;
+        
+        if (selectedDept) {
+            serviceSelect.disabled = false;
+        } else {
+            serviceSelect.disabled = true;
+            serviceSelect.value = '';
+        }
+
+        Array.from(serviceSelect.options).forEach(opt => {
+            if (!opt.value) return;
+            const deptMatch = !selectedDept || opt.dataset.dept === selectedDept;
+            const officeMatch = !selectedOffice || opt.dataset.office === selectedOffice;
+            const match = deptMatch && officeMatch;
+            opt.hidden = !match;
+            if (!match && opt.selected) serviceSelect.value = '';
+        });
+        updateDateState();
+    }
+
+    function updateDateState() {
+        if (serviceSelect.value) {
+            dateSelect.disabled = false;
+        } else {
+            dateSelect.disabled = true;
+            dateSelect.value = '';
+        }
+        fetchSlots();
+    }
+
+    async function fetchSlots() {
+        const serviceId = serviceSelect.value;
+        const dateVal = dateSelect.value;
+
+        // Reset slots
+        timeSelect.innerHTML = '<option value="">-- Choose Time Slot --</option>';
+        
+        if (serviceId && dateVal) {
+            timeSelect.disabled = false;
+            timeSelect.innerHTML = '<option value="">Loading slots...</option>';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/api/slots?service_id=${serviceId}&date=${dateVal}`);
+                const data = await response.json();
+                
+                timeSelect.innerHTML = '<option value="">-- Choose Time Slot --</option>';
+                
+                if (data.status === 'success' && data.slots && data.slots.length > 0) {
+                    data.slots.forEach(slot => {
+                        const option = document.createElement('option');
+                        option.value = slot;
+                        option.textContent = slot;
+                        timeSelect.appendChild(option);
+                    });
+                } else {
+                    timeSelect.innerHTML = '<option value="">No slots available</option>';
+                    timeSelect.disabled = true;
+                }
+            } catch (err) {
+                console.error('Failed to fetch slots', err);
+                timeSelect.innerHTML = '<option value="">Error loading slots</option>';
+            }
+        } else {
+            timeSelect.disabled = true;
+            submitBtn.disabled = true;
+        }
+    }
+
+    function checkSubmitState() {
+        if (officeSelect.value && deptSelect.value && serviceSelect.value && dateSelect.value && timeSelect.value) {
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.disabled = true;
+        }
+    }
+
+    officeSelect.addEventListener('change', filterDepts);
+    deptSelect.addEventListener('change', filterServices);
+    serviceSelect.addEventListener('change', updateDateState);
+    dateSelect.addEventListener('change', fetchSlots);
+    timeSelect.addEventListener('change', checkSubmitState);
+
+    filterDepts();
+});
+</script>
+{% endblock %}
